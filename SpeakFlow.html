@@ -1,0 +1,84 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>SpeakFlow — English & German</title>
+<style>
+*{box-sizing:border-box}body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;background:#f7f5fb;color:#28222f}
+header{background:#6d4aff;color:#fff;padding:18px 22px;display:flex;justify-content:space-between;align-items:center}
+.logo{font-size:23px;font-weight:800}nav button{background:transparent;color:#fff;border:0;margin-left:12px;font-size:15px}
+main{max-width:900px;margin:28px auto;padding:0 16px}.card{background:#fff;border-radius:20px;padding:24px;margin-bottom:18px;box-shadow:0 5px 20px #0000000d}
+label{display:block;font-weight:650;margin:14px 0 6px}select,input{width:100%;padding:13px;border:1px solid #ddd6eb;border-radius:12px;font-size:15px}
+button{cursor:pointer}.primary{background:#6d4aff;color:#fff;border:0;border-radius:12px;padding:13px 18px;font-weight:700}.secondary{background:#eee9ff;color:#5537c9;border:0;border-radius:12px;padding:11px 15px;font-weight:650}
+.hidden{display:none}.question{font-size:26px;font-weight:750;line-height:1.4;margin:12px 0 20px}.vocab{display:flex;flex-wrap:wrap;gap:8px}.word{background:#f0edff;color:#5537c9;padding:8px 12px;border-radius:20px}
+.add{display:flex;gap:8px;margin-top:10px}.add input{flex:1}.record{text-align:center;padding:28px 0 12px}.mic{width:96px;height:96px;border:0;border-radius:50%;background:#6d4aff;color:#fff;font-size:34px}.mic.on{background:#d93636;animation:pulse 1.1s infinite}@keyframes pulse{50%{transform:scale(1.08)}}
+.status{text-align:center;font-weight:650;margin-top:12px}.msg{padding:13px;border-radius:12px;margin-top:12px}.err{background:#fff0f0;color:#b42318}.ok{background:#effaf1;color:#187a2f}
+.transcript{background:#faf9fc;border-radius:14px;padding:16px;min-height:100px;line-height:1.6}audio{width:100%;margin-top:14px}.archive{border:1px solid #e4deef;border-radius:15px;padding:17px;margin:12px 0}.score{display:inline-block;background:#eee9ff;color:#5537c9;padding:6px 9px;border-radius:9px;margin:3px;font-size:13px}
+@media(max-width:600px){header{flex-direction:column;gap:10px}.question{font-size:21px}.add{flex-direction:column}}
+</style>
+</head>
+<body>
+<header><div class="logo">🗣️ SpeakFlow</div><nav><button onclick="page('practice')">Practice</button><button onclick="page('archive')">Archive 📚</button></nav></header>
+<main>
+<section id="practice">
+<div class="card">
+<h1>Speaking Practice</h1>
+<p>Practice English or German by speaking naturally.</p>
+<label>Language</label><select id="lang" onchange="refresh()"><option>English</option><option>German</option></select>
+<label>Level</label><select id="level"><option>A1</option><option>A2</option><option>B1</option><option>B2</option><option>C1</option></select>
+<label>Topic</label><select id="topic" onchange="refresh()"><option value="daily">Daily Life</option><option value="school">School</option><option value="friends">Friends</option><option value="travel">Travel</option><option value="future">Future</option><option value="opinion">Opinions</option></select>
+<button class="primary" style="margin-top:18px" onclick="newQ()">New Question</button>
+</div>
+<div class="card">
+<small>QUESTION</small><div id="question" class="question"></div>
+<strong>💡 Vocabulary</strong><div id="vocab" class="vocab"></div>
+<div class="add"><input id="custom" placeholder="Add your own word..."><button class="secondary" onclick="addWord()">+ Add</button></div>
+<div class="record"><button id="mic" class="mic" onclick="record()">🎙️</button><div id="status" class="status">Tap to record</div><div id="message"></div></div>
+<audio id="player" controls class="hidden"></audio>
+<h3>Your speech</h3><div id="text" class="transcript">Your speech will appear here...</div>
+<button class="primary" style="margin-top:15px" onclick="feedback()">✨ Feedback</button>
+<div id="feedback" class="hidden card" style="margin-top:15px;background:#f7f4ff"></div>
+<br><button class="primary" onclick="save()">💾 Save to Archive</button>
+</div>
+</section>
+<section id="archive" class="hidden"><div class="card"><h1>📚 My Archive</h1><div id="items"></div></div></section>
+</main>
+<script>
+const Q={
+English:{daily:["Tell me about your typical day.","What do you usually do after school?","Describe your morning routine.","What do you do in your free time?"],school:["What is your favorite subject and why?","Tell me about a normal school day.","What did you learn recently?","What would you change about your school?"],friends:["Tell me about your best friend.","What do you usually do with your friends?","What makes someone a good friend?","Describe a funny memory with your friends."],travel:["Where would you like to travel?","Describe your dream vacation.","Would you rather travel alone or with friends?","What place would you like to visit?"],future:["What do you want to do in the future?","What are your goals?","Where would you like to study?","What kind of career interests you?"],opinion:["What makes a good student?","Is it better to study alone or with friends?","What is more important: talent or hard work?","Does technology make life easier?"]},
+German:{daily:["Wie sieht dein typischer Tag aus?","Was machst du normalerweise nach der Schule?","Beschreibe deine Morgenroutine.","Was machst du in deiner Freizeit?"],school:["Was ist dein Lieblingsfach und warum?","Wie sieht ein normaler Schultag bei dir aus?","Was hast du kürzlich gelernt?","Was würdest du an deiner Schule ändern?"],friends:["Erzähl mir etwas über deine beste Freundin.","Was machst du normalerweise mit deinen Freunden?","Was macht einen guten Freund aus?","Erzähl mir von einem lustigen Erlebnis mit deinen Freunden."],travel:["Wohin möchtest du gerne reisen?","Wie sieht dein Traumurlaub aus?","Reist du lieber allein oder mit Freunden?","Welchen Ort möchtest du gerne besuchen?"],future:["Was möchtest du in Zukunft machen?","Was sind deine Ziele?","Wo möchtest du gerne studieren?","Welche Karriere interessiert dich?"],opinion:["Was macht einen guten Schüler aus?","Lernst du lieber allein oder mit Freunden?","Was ist wichtiger: Talent oder harte Arbeit?","Findest du, dass Technologie das Leben einfacher macht?"]}};
+const V={English:{daily:["usually","routine","after school","free time","relax","spend time"],school:["subject","classmate","homework","lesson","exam","learn"],friends:["friendship","hang out","support","laugh","conversation","memory"],travel:["destination","journey","experience","explore","culture","vacation"],future:["goal","career","university","dream","plan","future"],opinion:["in my opinion","I believe","however","because","for example","important"]},German:{daily:["normalerweise","der Alltag","nach der Schule","die Freizeit","sich entspannen","Zeit verbringen"],school:["das Fach","der Mitschüler","die Hausaufgaben","der Unterricht","die Prüfung","lernen"],friends:["die Freundschaft","sich treffen","die Unterstützung","lachen","das Gespräch","die Erinnerung"],travel:["das Reiseziel","die Reise","die Erfahrung","entdecken","die Kultur","der Urlaub"],future:["das Ziel","die Karriere","die Universität","der Traum","der Plan","die Zukunft"],opinion:["meiner Meinung nach","ich glaube","aber","weil","zum Beispiel","wichtig"]}};
+let words=[],rec=null,chunks=[],blob=null,url=null,recognition=null,finalText="";
+function refresh(){let l=lang.value,t=topic.value;words=[...V[l][t]];drawWords();newQ()}
+function drawWords(){vocab.innerHTML=words.map(w=>`<span class="word">${esc(w)}</span>`).join("")}
+function newQ(){let a=Q[lang.value][topic.value];question.textContent=a[Math.floor(Math.random()*a.length)];text.textContent="Your speech will appear here...";feedbackBoxHide();message.innerHTML="";player.classList.add("hidden");player.removeAttribute("src");blob=null}
+function addWord(){let x=custom.value.trim();if(x){words.push(x);drawWords();custom.value=""}}
+async function record(){
+ if(rec&&rec.state==="recording"){rec.stop();return}
+ message.innerHTML="";chunks=[];
+ if(!navigator.mediaDevices?.getUserMedia){return err("Your browser does not support microphone access.")}
+ try{
+  const stream=await navigator.mediaDevices.getUserMedia({audio:true});
+  let opt={}; if(MediaRecorder.isTypeSupported("audio/webm;codecs=opus"))opt.mimeType="audio/webm;codecs=opus";
+  rec=new MediaRecorder(stream,opt);
+  rec.ondataavailable=e=>{if(e.data.size)chunks.push(e.data)};
+  rec.onstop=()=>{blob=new Blob(chunks,{type:opt.mimeType||"audio/webm"});if(url)URL.revokeObjectURL(url);url=URL.createObjectURL(blob);player.src=url;player.classList.remove("hidden");status.textContent="✅ Recording finished";ok("You can listen to your recording above.");stream.getTracks().forEach(t=>t.stop())};
+  rec.start();startSTT();mic.classList.add("on");mic.textContent="⏹️";status.textContent="🔴 Recording... Tap again to stop.";
+ }catch(e){if(e.name==="NotAllowedError")err("Microphone permission was denied. Allow microphone access for this page and reload.");else if(e.name==="NotFoundError")err("No microphone was found.");else err("Microphone error: "+(e.message||e.name))}
+}
+function startSTT(){const SR=window.SpeechRecognition||window.webkitSpeechRecognition;if(!SR){err("Audio recording works, but speech-to-text is not supported in this browser.");return}recognition=new SR();recognition.lang=lang.value==="German"?"de-DE":"en-US";recognition.continuous=true;recognition.interimResults=true;finalText="";recognition.onresult=e=>{let inter="";for(let i=e.resultIndex;i<e.results.length;i++){let s=e.results[i][0].transcript;if(e.results[i].isFinal)finalText+=s+" ";else inter+=s}text.textContent=(finalText+inter).trim()};try{recognition.start()}catch(e){}}
+function feedback(){let t=text.textContent.trim();if(!t||t==="Your speech will appear here..."){err("Record an answer first.");return}document.getElementById("feedback").innerHTML=`<h3>✨ Speaking Feedback</h3><p><b>Grammar</b> <span class="score">8/10</span></p><p><b>Vocabulary</b> <span class="score">8/10</span></p><p><b>Fluency</b> <span class="score">7.5/10</span></p><p>AI correction will be connected here. This area is ready for an AI API.</p>`;document.getElementById("feedback").classList.remove("hidden")}
+async function save(){let t=text.textContent.trim();if(!t||t==="Your speech will appear here..."){err("Record an answer first.");return}let audio=null;if(blob)audio=await dataURL(blob);let s=JSON.parse(localStorage.getItem("sfArchive")||"[]");s.unshift({id:Date.now(),date:new Date().toLocaleString(),language:lang.value,level:level.value,topic:topic.value,question:question.textContent,text:t,audio});try{localStorage.setItem("sfArchive",JSON.stringify(s));ok("💾 Saved to your archive!");render()}catch(e){err("The browser storage is full. The text could not be saved with the audio.")}}
+function dataURL(b){return new Promise((res,rej)=>{let r=new FileReader();r.onload=()=>res(r.result);r.onerror=rej;r.readAsDataURL(b)})}
+function render(){let s=JSON.parse(localStorage.getItem("sfArchive")||"[]");items.innerHTML=s.length?s.map(x=>`<div class="archive"><b>${x.language==="German"?"🇩🇪":"🇬🇧"} ${esc(x.topic)} · ${esc(x.level)}</b><small style="display:block">${esc(x.date)}</small><p><b>Question:</b> ${esc(x.question)}</p><p>${esc(x.text)}</p>${x.audio?`<audio controls src="${x.audio}"></audio>`:""}<br><button class="secondary" onclick="del(${x.id})">Delete</button></div>`).join(""):"<p>Your archive is empty.</p>"}
+function del(id){let s=JSON.parse(localStorage.getItem("sfArchive")||"[]").filter(x=>x.id!==id);localStorage.setItem("sfArchive",JSON.stringify(s));render()}
+function page(p){practice.classList.toggle("hidden",p!=="practice");archive.classList.toggle("hidden",p!=="archive");if(p==="archive")render()}
+function esc(x){let d=document.createElement("div");d.textContent=x;return d.innerHTML}
+function err(x){message.innerHTML=`<div class="msg err">${esc(x)}</div>`}
+function ok(x){message.innerHTML=`<div class="msg ok">${esc(x)}</div>`}
+function feedbackBoxHide(){document.getElementById("feedback").classList.add("hidden")}
+refresh();render();
+</script>
+</body>
+</html>
